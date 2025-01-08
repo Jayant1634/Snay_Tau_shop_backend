@@ -37,19 +37,29 @@ exports.getProductById = async (req, res) => {
 // @access  Private/Admin
 exports.createProduct = async (req, res) => {
     try {
-        const { name, description, price, stock, category, image } = req.body;
-
-        if (!name || !description || !price || !stock || !category || !image) {
-            return res.status(400).json({ message: 'All fields are required' });
+        const { name, description, price, category, image, sizes } = req.body;
+        
+        // Validate required fields
+        if (!name || !description || !price || !category || !image || !sizes || !sizes.length) {
+            return res.status(400).json({ message: 'All fields are required including at least one size' });
         }
+
+        // Validate sizes array
+        if (!sizes.every(size => size.size && size.stock >= 0)) {
+            return res.status(400).json({ message: 'Each size must have a valid size name and stock quantity' });
+        }
+
+        // Calculate total stock from sizes
+        const stock = sizes.reduce((total, size) => total + size.stock, 0);
 
         const product = new Product({
             name,
             description,
             price,
-            stock,
             category,
             image,
+            sizes,
+            stock // Total stock calculated from sizes
         });
 
         await product.save();
@@ -65,17 +75,28 @@ exports.createProduct = async (req, res) => {
 // @access  Private/Admin
 exports.updateProduct = async (req, res) => {
     try {
-        const { name, description, price, stock, category, image } = req.body;
+        const { name, description, price, category, image, sizes } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // If sizes are being updated, validate them
+        if (sizes) {
+            if (!sizes.every(size => size.size && size.stock >= 0)) {
+                return res.status(400).json({ message: 'Each size must have a valid size name and stock quantity' });
+            }
+            // Recalculate total stock
+            const stock = sizes.reduce((total, size) => total + size.stock, 0);
+            product.stock = stock;
+            product.sizes = sizes;
+        }
+
+        // Update other fields if provided
         product.name = name || product.name;
         product.description = description || product.description;
         product.price = price || product.price;
-        product.stock = stock || product.stock;
         product.category = category || product.category;
         product.image = image || product.image;
 
@@ -86,7 +107,7 @@ exports.updateProduct = async (req, res) => {
         if (error.kind === 'ObjectId') {
             return res.status(404).json({ message: 'Product not found' });
         }
-        res.status(500).send('Server Error');
+        res.status(500).send('Server Error ' + error.message);
     }
 };
 

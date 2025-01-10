@@ -27,7 +27,8 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/authRoutes'));       // Authentication Routes
 app.use('/api/products', require('./routes/productRoutes')); // Product Routes
 app.use('/api/orders', require('./routes/orderRoutes'));     // Order Routes
-app.use('/api/cart', require('./routes/cartRoutes'));        // Cart Routes ✅ Added
+app.use('/api/cart', require('./routes/cartRoutes'));        // Cart Routes
+app.use('/api/admin', require('./routes/adminRoutes'));      // Admin Routes ✅ Added
 
 // ✅ Default Route
 app.get('/', (req, res) => {
@@ -44,8 +45,8 @@ app.use((req, res, next) => {
 
 // ✅ Global Error Handling Middleware
 app.use((err, req, res, next) => {
-    console.error('🔥 Error:', err.stack);
-    res.status(err.status || 500).json({
+    console.error('❌ Error:', err);
+    res.status(500).json({
         success: false,
         message: err.message || 'Internal Server Error',
     });

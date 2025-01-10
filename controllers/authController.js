@@ -17,7 +17,7 @@ const generateToken = (user) => {
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password } = req.body;
 
         // Check if user already exists
         const userExists = await User.findOne({ email });
@@ -28,12 +28,12 @@ exports.register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
+        // Create user with default role 'user'
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
-            role,
+            role: 'user', // Set default role to 'user'
         });
 
         // Generate token
@@ -60,18 +60,18 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
     try {
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
         // Check if user exists
-        const user = await User.findOne({ email, role });
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid email or role' });
+            return res.status(401).json({ message: 'Invalid email or password' });
         }
 
         // Check if password matches
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid password' });
+            return res.status(401).json({ message: 'Invalid email or password' });
         }
 
         // Generate JWT token
